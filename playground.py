@@ -5,6 +5,7 @@ from statsmodels.tsa.api import ExponentialSmoothing, SimpleExpSmoothing, Holt
 import plotly as py
 import plotly.graph_objs as go
 import plotly.io as pio
+from plotly.subplots import make_subplots
 
 """
 * Device Sheets *
@@ -181,11 +182,23 @@ if __name__ == '__main__':
     fig = go.Figure(data=data, layout=layout)
     pio.write_image(fig, 'test.png', scale=2)
 
-    fig = go.Figure(data=data2, layout=layout)
-    pio.write_image(fig, 'test2.png', scale=2)
+    fig2 = go.Figure(data=data2, layout=layout)
+    pio.write_image(fig2, 'test2.png', scale=2)
     
-    fig = go.Figure(data=data3, layout=layout)
-    pio.write_image(fig, 'test3.png', scale=2)
+    fig3 = go.Figure(data=data3, layout=layout)
+    pio.write_image(fig3, 'test3.png', scale=2)
+
+    ## 子圖
+    # fig4 = make_subplots(rows=3, cols=1)
+    # fig4.append_trace(getShiftScatter(Orig_P1, 'Han', 'rgb(110,95,169)'), row=1, col=1)
+    # fig4.append_trace(getShiftScatter(Orig_P2, 'Perry', 'rgb(75,172,198)'), row=1, col=1)
+    # fig4.append_trace(getShiftScatter(Nor_P1, 'Han', 'rgb(110,95,169)'), row=2, col=1)
+    # fig4.append_trace(getShiftScatter(Nor_P2, 'Han', 'rgb(110,95,169)'), row=2, col=1)
+    # fig4.append_trace(getShiftScatter(SES_P1, 'Han', 'rgb(110,95,169)'), row=3, col=1)
+    # fig4.append_trace(getShiftScatter(SES_P2, 'Han', 'rgb(110,95,169)'), row=3, col=1)
+
+    # fig4.update_layout(height=600, width=600, title_text="Stacked subplots")
+    # fig4.show()
     
     
 
