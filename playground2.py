@@ -78,6 +78,7 @@ alpha = 0.5
 def getRSSI(filename, ble=False):
     # 整理 log 並上標籤
     df = pd.read_csv(filename, sep='\t', parse_dates=[0], error_bad_lines=False)
+    print(df)
     if 'ble' in filename:
         df.columns = ['time','mac','type','RSSI','uuid']
         rate='1'
@@ -95,18 +96,7 @@ def getRSSI(filename, ble=False):
         probe1 = df[df.mac == device_1_mac].resample(rate+'S').agg(dict(RSSI='max')).dropna()
         probe2 = df[df.mac == device_2_mac].resample(rate+'S').agg(dict(RSSI='max')).dropna()
     
-    Orig_P1=probe1.copy()
-    Orig_P2=probe2.copy()
-
-    probe1.RSSI = getNormalize(probe1.RSSI)
-    probe2.RSSI = getNormalize(probe2.RSSI)
-    Nor_P1=probe1
-    Nor_P2=probe2
-
-    SES_P1 = getSES(probe1, alpha, False)
-    SES_P2 = getSES(probe2, alpha, False)
-
-    return Orig_P1, Orig_P2, Nor_P1, Nor_P2, SES_P1, SES_P2
+    return probe1, probe2
 
 # RSSI 正規化
 def getNormalize(column):
@@ -140,67 +130,10 @@ def getShiftScatter(df, name, color):
 
 # 主程式
 if __name__ == '__main__':
+    df = pd.read_csv(file4, sep='\t', parse_dates=[0], error_bad_lines=False)
+    df.columns = ['time','mac','chip','ap','RSSI']
+    print(df)
 
-    Orig_P1, Orig_P2, Nor_P1, Nor_P2, SES_P1, SES_P2 = getRSSI(file2)  
-
-    data = [
-    # getShiftScatter(df1, 'UE1 - UE5', 'rgb(112,193,71)'),
-    # getShiftScatter(df2, 'UE1 - UE6', 'rgb(110,95,169)'),
-    # getShiftScatter(df3, 'UE3 - UE6', 'rgb(75,172,198)'),
-    getShiftScatter(Orig_P1, 'Han', 'rgb(110,95,169)'),
-    getShiftScatter(Orig_P2, 'Perry', 'rgb(75,172,198)'),
-    # getShiftScatter(df4, 'UE4 - UE5'),
-    # getShiftScatter(df5, 'UE3 - UE5'),
-    # getShiftScatter(df6, 'UE4 - UE6', 'rgb(75,172,198)'),
-    ]
-
-    data2 = [
-    getShiftScatter(Nor_P1, 'Han', 'rgb(110,95,169)'),
-    getShiftScatter(Nor_P2, 'Perry', 'rgb(75,172,198)'),
-    ]
-
-    data3 = [
-    getShiftScatter(SES_P1, 'Han', 'rgb(110,95,169)'),
-    getShiftScatter(SES_P2, 'Perry', 'rgb(75,172,198)'),
-    ]
-
-    layout = go.Layout(
-        xaxis = dict(
-            title='Time',
-            # range=[0, 5],
-            showline = True,
-            ),
-        yaxis = dict(
-            title='RSSI',
-            # range=[0.6, 0.8],
-            showline = True,
-            ),
-        font = dict(family='Montserrat SemiBold', size=14),
-        # legend=dict(orientation="h"),
-        # paper_bgcolor='rgba(0,0,0,0)',
-        # plot_bgcolor='rgba(0,0,0,0)',
-    )
-
-    ## 畫圖
-    # fig = go.Figure(data=data, layout=layout)
-    # pio.write_image(fig, 'test.png', scale=2)
-    # fig.show()
-    # fig2 = go.Figure(data=data2, layout=layout)
-    # pio.write_image(fig2, 'test2.png', scale=2)
-    # fig3 = go.Figure(data=data3, layout=layout)
-    # pio.write_image(fig3, 'test3.png', scale=2)
-
-    ## 子圖
-    # fig4 = make_subplots(rows=3, cols=1)
-    # fig4.append_trace(getShiftScatter(Orig_P1, 'Han', 'rgb(110,95,169)'), row=1, col=1)
-    # fig4.append_trace(getShiftScatter(Orig_P2, 'Perry', 'rgb(75,172,198)'), row=1, col=1)
-    # fig4.append_trace(getShiftScatter(Nor_P1, 'Han', 'rgb(110,95,169)'), row=2, col=1)
-    # fig4.append_trace(getShiftScatter(Nor_P2, 'Han', 'rgb(110,95,169)'), row=2, col=1)
-    # fig4.append_trace(getShiftScatter(SES_P1, 'Han', 'rgb(110,95,169)'), row=3, col=1)
-    # fig4.append_trace(getShiftScatter(SES_P2, 'Han', 'rgb(110,95,169)'), row=3, col=1)
-
-    # fig4.update_layout(height=600, width=600, title_text="Stacked subplots")
-    # fig4.show()
     
     
 

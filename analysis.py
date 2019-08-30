@@ -179,6 +179,7 @@ def getRSSI(filename, ble=False):
     else:
         probe1 = df[df.mac == device_1_mac].resample(rate+'S').agg(dict(rssi='max')).dropna()
         probe2 = df[df.mac == device_2_mac].resample(rate+'S').agg(dict(rssi='max')).dropna()
+        
     probe1.rssi = getNormalize(probe1.rssi)
     probe2.rssi = getNormalize(probe2.rssi)
     probe1 = getSES(probe1, alpha, False)
