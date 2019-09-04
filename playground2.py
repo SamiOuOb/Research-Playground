@@ -6,6 +6,7 @@ import plotly as py
 import plotly.graph_objs as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
+from scipy.spatial.distance import cosine
 
 """
 * Device Sheets *
@@ -78,7 +79,6 @@ alpha = 0.5
 def getRSSI(filename, ble=False):
     # 整理 log 並上標籤
     df = pd.read_csv(filename, sep='\t', parse_dates=[0], error_bad_lines=False)
-    print(df)
     if 'ble' in filename:
         df.columns = ['time','mac','type','RSSI','uuid']
         rate='1'
@@ -96,7 +96,18 @@ def getRSSI(filename, ble=False):
         probe1 = df[df.mac == device_1_mac].resample(rate+'S').agg(dict(RSSI='max')).dropna()
         probe2 = df[df.mac == device_2_mac].resample(rate+'S').agg(dict(RSSI='max')).dropna()
     
-    return probe1, probe2
+    Orig_P1=probe1.copy()
+    Orig_P2=probe2.copy()
+
+    probe1.RSSI = getNormalize(probe1.RSSI)
+    probe2.RSSI = getNormalize(probe2.RSSI)
+    Nor_P1=probe1
+    Nor_P2=probe2
+
+    SES_P1 = getSES(probe1, alpha, False).dropna()
+    SES_P2 = getSES(probe2, alpha, False).dropna()
+
+    return Orig_P1, Orig_P2, Nor_P1, Nor_P2, SES_P1, SES_P2
 
 # RSSI 正規化
 def getNormalize(column):
@@ -128,14 +139,20 @@ def getShiftScatter(df, name, color):
         )
     return trace
 
+def getCosSim(SES0_Phone1,SES1_Phone1,SES2_Phone1,SES0_Phone2,SES1_Phone2,SES2_Phone2,interval=20):
+    rssi_info=SES0_Phone1.append([SES1_Phone1, SES2_Phone1], ignore_index=True)
+    rssi_info['RSSI2']=SES0_Phone2.append([SES1_Phone2, SES2_Phone2], ignore_index=True)
+    a_list = rssi_info.RSSI.fillna(0).tolist()
+    b_list = rssi_info.RSSI2.fillna(0).tolist()
+    cs=[]
+    for i in range(0, len(a_list), interval):
+        cs.append(1 - cosine(a_list[i:i+interval], b_list[i:i+interval]))
+    return cs
+
 # 主程式
 if __name__ == '__main__':
-    df = pd.read_csv(file4, sep='\t', parse_dates=[0], error_bad_lines=False)
-    df.columns = ['time','mac','chip','ap','RSSI']
-    print(df)
-
-    
-    
-
- 
+    Orig0_Phone1, Orig0_Phone2, Nor0_Phone1, Nor0_Phone2, SES0_Phone1, SES0_Phone2=getRSSI(file0, ble=ble)
+    Orig1_Phone1, Orig1_Phone2, Nor1_Phone1, Nor1_Phone2, SES1_Phone1, SES1_Phone2=getRSSI(file1, ble=ble)
+    Orig2_Phone1, Orig2_Phone2, Nor2_Phone1, Nor2_Phone2, SES2_Phone1, SES2_Phone2=getRSSI(file2, ble=ble)
+    print(getCosSim(SES0_Phone1,SES1_Phone1,SES2_Phone1,SES0_Phone2,SES1_Phone2,SES2_Phone2))
     
