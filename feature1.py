@@ -7,6 +7,7 @@ import plotly.graph_objs as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
 from scipy.spatial.distance import cosine
+from itertools import combinations, permutations
 
 """
 * Device Sheets *
@@ -59,6 +60,10 @@ ibeacon = {
     'Ray'    : '12:3b:6a:1a:63:1d'
 }
 
+mac_queue=['12:3b:6a:1a:75:61', '12:3b:6a:1a:75:71', '12:3b:6a:1a:75:66', '12:3b:6a:1a:75:44',
+           '12:3b:6a:1a:75:5a', '12:3b:6a:1a:75:5b', '12:3b:6a:1a:62:ed', '12:3b:6a:1a:62:de',
+           '12:3b:6a:1a:62:ef', '12:3b:6a:1a:63:23', '12:3b:6a:1a:63:1d']
+
 device_1_name = 'ibeacon/Han'
 device_1_mac = '12:3b:6a:1a:75:71'
 
@@ -73,10 +78,12 @@ file3 = "./1127/wifi/20181127_100.log"
 file4 = "./1127/wifi/20181127_101.log"
 file5 = "./1127/wifi/20181127_102.log"
 
+file_queue=[file0,file1,file2]
+
 interval = 5
 alpha = 0.5
 
-def getRSSI(filename, ble=False):
+def getRawData(filename, device_mac):
     # 整理 log 並上標籤
     df = pd.read_csv(filename, sep='\t', parse_dates=[0], error_bad_lines=False)
     if 'ble' in filename:
@@ -87,31 +94,13 @@ def getRSSI(filename, ble=False):
         rate='2'
     df = df.set_index('time')
     df = df.between_time(start_time, end_time)
-    
+
     # 取出兩裝置之 RSSI 並 resample，取每段時間內最大之RSSI
-    # if ble == True:
-    #     probe1 = df[df.uuid == device_1_mac].resample(rate+'S').agg(dict(RSSI='max')).dropna()
-    #     probe2 = df[df.uuid == device_2_mac].resample(rate+'S').agg(dict(RSSI='max')).dropna()
-    # else:
-    #     probe1 = df[df.mac == device_1_mac].resample(rate+'S').agg(dict(RSSI='max')).dropna()
-    #     probe2 = df[df.mac == device_2_mac].resample(rate+'S').agg(dict(RSSI='max')).dropna()
-    probe1 = df[df.mac == device_1_mac].resample(rate+'S').agg(dict(RSSI='max'))
-    probe2 = df[df.mac == device_2_mac].resample(rate+'S').agg(dict(RSSI='max'))
-    
-    # Orig_P1=probe1.copy()
-    # Orig_P2=probe2.copy()
-
-    probe1.RSSI = getNormalize(probe1.RSSI)
-    probe2.RSSI = getNormalize(probe2.RSSI)
-    Nor_P1=probe1
-    Nor_P2=probe2
-
-    temp=pd.merge(Nor_P1,Nor_P2,on='time',how='outer').fillna(0)
-    temp.columns=['RSSI_dev1','RSSI_dev2']
-    SES_P1 = getSES(temp.RSSI_dev1, alpha, False).dropna()
-    SES_P2 = getSES(temp.RSSI_dev2, alpha, False).dropna()
- 
-    return SES_P1, SES_P2
+    probe = df[df.mac == device_mac].resample(rate+'S').agg(dict(RSSI='max'))
+    probe.RSSI = getNormalize(probe.RSSI).fillna(0)
+    SES = getSES(probe.RSSI, alpha, False).dropna()
+    # print(SES)
+    return SES
 
 # RSSI 正規化
 def getNormalize(column):
@@ -143,9 +132,9 @@ def getShiftScatter(df, name, color):
         )
     return trace
 
-def getCosSim(SES0_Phone1,SES1_Phone1,SES2_Phone1,SES0_Phone2,SES1_Phone2,SES2_Phone2,interval=50):
-    rssi_info=SES0_Phone1.append([SES1_Phone1, SES2_Phone1], ignore_index=True)
-    rssi_info['RSSI2']=SES0_Phone2.append([SES1_Phone2, SES2_Phone2], ignore_index=True)
+def getCosSim(SES_P1, SES_P2, interval=50):
+    rssi_info=SES_P1
+    rssi_info['RSSI2']=SES_P2
     a_list = rssi_info.RSSI.fillna(0).tolist()
     b_list = rssi_info.RSSI2.fillna(0).tolist()
     cs=[]
@@ -154,11 +143,28 @@ def getCosSim(SES0_Phone1,SES1_Phone1,SES2_Phone1,SES0_Phone2,SES1_Phone2,SES2_P
     return cs
 # 主程式
 if __name__ == '__main__':
-    SES0_Phone1, SES0_Phone2=getRSSI(file0, ble=ble)
-    SES1_Phone1, SES1_Phone2=getRSSI(file1, ble=ble)
-    SES2_Phone1, SES2_Phone2=getRSSI(file2, ble=ble)
 
-
-
-    print(getCosSim(SES0_Phone1,SES1_Phone1,SES2_Phone1,SES0_Phone2,SES1_Phone2,SES2_Phone2))
+    df = pd.DataFrame(columns=['CosSim', 'RPi_No', 'Time_stamp'])
     
+    for device_mac in mac_queue : 
+
+
+        RawData_RPi100 = getRawData(file0, device_mac)
+        RawData_RPi101 = getRawData(file1, device_mac)
+        RawData_RPi102 = getRawData(file2, device_mac)
+
+        # Raw_queue=[RawData_RPi100,RawData_RPi101,RawData_RPi102]
+        # for h,k in combinations(Raw_queue,2):
+        #     temp = getCosSim(h,k)
+    
+        print(RawData_RPi100)
+
+            
+
+
+        
+
+
+
+    
+
