@@ -9,6 +9,7 @@ from plotly.subplots import make_subplots
 from scipy.spatial.distance import cosine
 from itertools import combinations, permutations
 import os
+from sklearn import tree
 
 """
 * Device Sheets *
@@ -176,14 +177,27 @@ def mergeAllSnifferData():
         TrainData=TrainData.append(temp)
     
     TrainData=TrainData.set_index('pair')
+    TrainData['State']=1
+    TrainData['State'].loc[(TrainData.index !='dev2_dev5') 
+    & (TrainData.index !='dev2_dev6') 
+    & (TrainData.index !='dev5_dev6') 
+    & (TrainData.index !='dev9_dev10') 
+    & (TrainData.index !='dev9_dev11') 
+    & (TrainData.index !='dev10_dev11')  ]=0
+
     return TrainData
 
 # 主程式
 if __name__ == '__main__':
+
     TrainData=mergeAllSnifferData()
     TrainData.to_csv('C:/Users/Sami/Desktop/TrainData.csv')
-    print(TrainData)
+    print(TrainData.shape)
 
+
+    # from sklearn.datasets import load_iris
+    # iris = load_iris()
+    # print(iris.data)
 
     
     
