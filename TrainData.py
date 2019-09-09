@@ -8,6 +8,7 @@ import plotly.io as pio
 from plotly.subplots import make_subplots
 from scipy.spatial.distance import cosine
 from itertools import combinations, permutations
+import os
 
 """
 * Device Sheets *
@@ -33,7 +34,7 @@ wifi = {
     'Mack'   : '14:dd:a9:bc:11:0c',
     'Jason'  : '30:07:4d:e9:b2:c6',
     'Ray'    : 'd0:17:c2:10:5f:5c'
-} 
+}
 
 ble = {
     'Jeff'   : '0000d421-0000-1000-8000-00805f9b34fb',
@@ -132,34 +133,60 @@ def getShiftScatter(df, name, color):
         )
     return trace
 
-def getCosSim(SES_P1, SES_P2, interval=50):
-    rssi_info=SES_P1
-    rssi_info['RSSI2']=SES_P2
-    a_list = rssi_info.RSSI.fillna(0).tolist()
-    b_list = rssi_info.RSSI2.fillna(0).tolist()
+def mergeAllDevData(filename,mac_queue):
+    mergedata = getRawData(filename,mac_queue[0])
+    for mac in mac_queue[1:] :
+        mergedata = pd.merge(mergedata,getRawData(filename,mac),on='time',how='outer').sort_values(by='time').fillna(0)
+    mergedata.columns = ['dev1','dev2','dev3','dev4','dev5','dev6','dev7','dev8','dev9','dev10','dev11']
+    return mergedata
+
+def getCosSim(SES_P1, SES_P2, interval=5):
+    a_list = SES_P1.tolist()
+    b_list = SES_P2.tolist()
     cs=[]
     for i in range(0, len(a_list), interval):
         cs.append(1 - cosine(a_list[i:i+interval], b_list[i:i+interval]))
     return cs
+
+def getTrainData(filname, mac_queue):
+    mergedata=mergeAllDevData(filname,mac_queue)
+    dev_name=['dev1','dev2','dev3','dev4','dev5','dev6','dev7','dev8','dev9','dev10','dev11']
+    temp = pd.DataFrame()
+    TrainData = pd.DataFrame()
+    for dev1, dev2 in combinations(dev_name,2) :
+        temp['CosSim']=getCosSim(mergedata[dev1],mergedata[dev2])
+        temp['pair']='{dev1}_{dev2}'.format(dev1=dev1,dev2=dev2)
+        temp['timestamp']=temp.index
+        TrainData=TrainData.append(temp)
+    return TrainData
+
+def mergeAllSnifferData():
+    RPi100 = getTrainData(file0, mac_queue)
+    RPi101 = getTrainData(file1, mac_queue)
+    RPi102 = getTrainData(file2, mac_queue)
+    sniffer_queue_name=['RPi100', 'RPi101', 'RPi102']
+    sniffer_queue=[RPi100, RPi101 ,RPi102]
+    temp = pd.DataFrame()
+    TrainData = pd.DataFrame()
+    # getTrainData(sniffer_queue,mac_queue)
+
+    for sniffer in sniffer_queue :
+        temp=sniffer
+        temp['RPi_No']=sniffer_queue_name.pop(0)
+        TrainData=TrainData.append(temp)
+    
+    TrainData=TrainData.set_index('pair')
+    return TrainData
+
 # 主程式
 if __name__ == '__main__':
+    TrainData=mergeAllSnifferData()
+    TrainData.to_csv('C:/Users/Sami/Desktop/TrainData.csv')
+    print(TrainData)
 
-    df = pd.DataFrame(columns=['CosSim', 'RPi_No', 'Time_stamp'])
+
     
-    for device_mac in mac_queue : 
-
-
-        RawData_RPi100 = getRawData(file0, device_mac)
-        RawData_RPi101 = getRawData(file1, device_mac)
-        RawData_RPi102 = getRawData(file2, device_mac)
-
-        # Raw_queue=[RawData_RPi100,RawData_RPi101,RawData_RPi102]
-        # for h,k in combinations(Raw_queue,2):
-        #     temp = getCosSim(h,k)
     
-        print(RawData_RPi100)
-
-            
 
 
         
