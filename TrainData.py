@@ -6,10 +6,12 @@ import plotly as py
 import plotly.graph_objs as go
 import plotly.io as pio
 from plotly.subplots import make_subplots
+import plotly.figure_factory as ff
 from scipy.spatial.distance import cosine
 from itertools import combinations, permutations
 import os
-from sklearn import tree
+from sklearn.tree import DecisionTreeClassifier as DTC, export_graphviz
+import pydot
 
 """
 * Device Sheets *
@@ -165,7 +167,7 @@ def mergeAllSnifferData():
     RPi100 = getTrainData(file0, mac_queue)
     RPi101 = getTrainData(file1, mac_queue)
     RPi102 = getTrainData(file2, mac_queue)
-    sniffer_queue_name=['RPi100', 'RPi101', 'RPi102']
+    sniffer_queue_name=['100', '101', '102']
     sniffer_queue=[RPi100, RPi101 ,RPi102]
     temp = pd.DataFrame()
     TrainData = pd.DataFrame()
@@ -191,20 +193,20 @@ def mergeAllSnifferData():
 if __name__ == '__main__':
 
     TrainData=mergeAllSnifferData()
+    TrainData.CosSim=TrainData.CosSim.fillna(0)
     TrainData.to_csv('C:/Users/Sami/Desktop/TrainData.csv')
-    print(TrainData.shape)
+    print(TrainData)
+    # print(TrainData.isnull().any())
 
-
-    # from sklearn.datasets import load_iris
-    # iris = load_iris()
-    # print(iris.data)
-
+    X = TrainData.iloc[:, 0:3]
+    y = TrainData.iloc[:, 3]
+    dtc = DTC(criterion='entropy')
+    dtc.fit(X, y)
+    print('Accuracy：', dtc.score(X, y))
+    with open('tree.dot', 'w') as f:
+        f = export_graphviz(dtc, feature_names=X.columns, out_file=f)
+    # dot -Tpng tree.dot -o tree.png
     
-    
-
-
-        
-
 
 
     
