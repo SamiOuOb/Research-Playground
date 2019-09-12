@@ -202,19 +202,22 @@ if __name__ == '__main__':
     y = TrainData.iloc[:, 3]
     dtc = DTC(criterion='entropy')
     dtc.fit(X, y)
+
+    # print(X.columns)
+    print(y.name)
+
     print('Accuracy：', dtc.score(X, y))
     with open('tree.dot', 'w') as f:
-        f = export_graphviz(dtc, feature_names=X.columns, out_file=f, filled=True, rounded=True, special_characters=True)
+        f = export_graphviz(dtc, feature_names=X.columns, class_names=['0','1'] ,out_file=f, filled=True, rounded=True, special_characters=True)
     # dot -Tpng tree.dot -o tree.png
     # dot -Tsvg tree.dot -o tree.svg
     
 
-    #TREE TEST
-    import random
-    for _ in range(100):
-        i = random.randint(0, len(TrainData))
-        pred = dtc.predict(X)[i]
-        sign = '✗' if y[i] != pred else '✓'
-        print(y[i], pred, sign)
-
+    # #TREE TEST
+    # import random
+    # for _ in range(100):
+    #     i = random.randint(0, len(TrainData))
+    #     pred = dtc.predict(X)[i]
+    #     sign = '✗' if y[i] != pred else '✓'
+    #     print(y[i], pred, sign)
 
