@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 import csv
 import matplotlib.pyplot as plt
 from statsmodels.tsa.api import ExponentialSmoothing, SimpleExpSmoothing, Holt
@@ -11,6 +12,10 @@ from scipy.spatial.distance import cosine
 from itertools import combinations, permutations
 import os
 from sklearn.tree import DecisionTreeClassifier as DTC, export_graphviz
+from sklearn.model_selection import train_test_split
+from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import KFold
+from sklearn.metrics import make_scorer
 import pydot
 
 """
@@ -189,35 +194,86 @@ def mergeAllSnifferData():
 
     return TrainData
 
+# 定義準確度
+def accuracy_score(truth, pred):
+    """ Returns accuracy score for input truth and predictions. """
+    
+    # Ensure that the number of predictions matches number of outcomes
+    if len(truth) == len(pred): 
+        
+        # Calculate and return the accuracy as a percent
+        return(truth == pred).mean()*100
+    
+    else:
+        return 0
+
+def fit_model_k_fold(X, y):
+    """ Performs grid search over the 'max_depth' parameter for a 
+        decision tree regressor trained on the input data [X, y]. """
+    
+    # Create cross-validation sets from the training data
+    # cv_sets = ShuffleSplit(n_splits = 10, test_size = 0.20, random_state = 0)
+    k_fold = KFold(n_splits=10)
+    
+    #  Create a decision tree clf object
+    dtc = DTC(random_state=80)
+
+    # params = {'max_depth':range(10,21),'criterion':np.array(['entropy','gini'])}
+    params = {'criterion':np.array(['entropy','gini'])}
+
+    # Transform 'accuracy_score' into a scoring function using 'make_scorer' 
+    scoring_fnc = make_scorer(accuracy_score)
+
+    # Create the grid search object
+    grid = GridSearchCV(dtc, param_grid=params,scoring=scoring_fnc,cv=k_fold)
+
+    # Fit the grid search object to the data to compute the optimal model
+    grid = grid.fit(X, y)
+
+    # Return the optimal model after fitting the data
+    return grid.best_estimator_
+
 # 主程式
 if __name__ == '__main__':
 
     TrainData=mergeAllSnifferData()
     TrainData.CosSim=TrainData.CosSim.fillna(0)
     TrainData.to_csv('C:/Users/Sami/Desktop/TrainData.csv')
-    print(TrainData)
+    # print(TrainData)
     # print(TrainData.isnull().any())
 
     X = TrainData.iloc[:, 0:3]
     y = TrainData.iloc[:, 3]
-    dtc = DTC(criterion='entropy')
-    dtc.fit(X, y)
 
-    # print(X.columns)
-    print(y.name)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 0)
+    print("Training set has {} samples.".format(X_train.shape[0]))
+    print("Testing set has {} samples.".format(X_test.shape[0]))
 
-    print('Accuracy：', dtc.score(X, y))
+    # 預設參數之決策樹
+    # dtc = DTC()
+
+    dtc = fit_model_k_fold(X_train, y_train)
+    dtc.fit(X_train, y_train)
+    print("k_fold Parameter 'max_depth' is {} for the optimal model.".format(dtc.get_params()['max_depth']))
+    print("k_fold Parameter 'criterion' is {} for the optimal model.".format(dtc.get_params()['criterion']))
+    print(dtc)
+
+    # 特徵重要度 
+    print(dtc.feature_importances_)
+    predict_target = dtc.predict(X_test)
+    print(predict_target)
+    print(sum(predict_target == y_test))
+
+    from sklearn import metrics
+    print(metrics.classification_report(y_test, predict_target))
+    print(metrics.confusion_matrix(y_test, predict_target))
+
+
+    print('Accuracy：', dtc.score(X_test, y_test))
     with open('tree.dot', 'w') as f:
-        f = export_graphviz(dtc, feature_names=X.columns, class_names=['0','1'] ,out_file=f, filled=True, rounded=True, special_characters=True)
+        f = export_graphviz(dtc, feature_names=X.columns ,out_file=f, filled=True, rounded=True, special_characters=True)
     # dot -Tpng tree.dot -o tree.png
     # dot -Tsvg tree.dot -o tree.svg
     
 
-    # #TREE TEST
-    # import random
-    # for _ in range(100):
-    #     i = random.randint(0, len(TrainData))
-    #     pred = dtc.predict(X)[i]
-    #     sign = '✗' if y[i] != pred else '✓'
-    #     print(y[i], pred, sign)
 
