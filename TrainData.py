@@ -219,7 +219,7 @@ def fit_model_k_fold(X, y):
     dtc = DTC(random_state=80)
 
     # params = {'max_depth':range(10,21),'criterion':np.array(['entropy','gini'])}
-    params = {'max_depth':range(30,31),'criterion':np.array(['entropy','gini'])}
+    params = {'criterion':np.array(['entropy','gini'])}
 
     # Transform 'accuracy_score' into a scoring function using 'make_scorer' 
     scoring_fnc = make_scorer(accuracy_score)
@@ -256,9 +256,9 @@ if __name__ == '__main__':
     dtc.fit(X_train, y_train)
     print("k_fold Parameter 'max_depth' is {} for the optimal model.".format(dtc.get_params()['max_depth']))
     print("k_fold Parameter 'criterion' is {} for the optimal model.".format(dtc.get_params()['criterion']))
-    # print(dtc)
+    print(dtc)
 
-    # 特徵重要度 
+    # 特徵重要度
     print(dtc.feature_importances_)
     predict_target = dtc.predict(X_test)
     print(predict_target)
@@ -274,5 +274,4 @@ if __name__ == '__main__':
         f = export_graphviz(dtc, feature_names=X.columns ,out_file=f, filled=True, rounded=True, special_characters=True)
     # dot -Tpng tree.dot -o tree.png
     # dot -Tsvg tree.dot -o tree.svg
-    
-    
+
