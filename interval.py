@@ -678,156 +678,158 @@ if __name__ == '__main__':
 #     pio.write_image(fig, 'chart/TranData Size Comparison(All).png', scale=2)
 #     fig.show()
 
-# # ========== TranData Size Comparison ==========
-#     xaxis=[]
-#     yaxis=[]
-#     for timelength in range(60,1080,60):
-#         # timelength=600 #資料長度(秒數)
-#         TrandataSize=timelength/interval
-#         TrainData = pd.read_csv('TrainData1211.csv', error_bad_lines=False)
-#         TrainData=TrainData.set_index('pair')
-#         # TrainData1211 = pd.read_csv('TrainData1211.csv', error_bad_lines=False)
-#         # print(TrainData1211)
+# ========== TranData Size Comparison ==========
+    xaxis=[]
+    yaxis=[]
 
-#         # print(TrainData)
+    for timelength in range(60,900,60):
+        # timelength=600 #資料長度(秒數)
+        TrandataSize=timelength/interval
+        TrainData = pd.read_csv('TrainData1211.csv', error_bad_lines=False)
+        TrainData=TrainData.set_index('pair')
 
-#         X = TrainData.iloc[:, 0:13]
-#         y = TrainData.iloc[:, 13]
-#         # print(X)
+        X = TrainData.iloc[:, 0:13]
+        y = TrainData.iloc[:, 13]
+        # print(X)
 
-#         X_train=X.loc[(TrainData.timestamp <= TrandataSize)]
-#         y_train=y.loc[(TrainData.timestamp <= TrandataSize)]
-#         X_test=X.loc[(TrainData.timestamp > TrandataSize)]
-#         y_test=y.loc[(TrainData.timestamp > TrandataSize)]
+        X_test=X.loc[(TrainData.timestamp > (900/interval))]
+        y_test=y.loc[(TrainData.timestamp > (900/interval))]
 
-#         X_testset=[]
-#         y_testset=[]
+        acu_queue=[]
+        for i in range(0,16-int(timelength/60)):
+            X_train=X.loc[(TrainData.timestamp > i*60/interval) & (TrainData.timestamp <= TrandataSize+i*60/interval)]
+            y_train=y.loc[(TrainData.timestamp > i*60/interval) & (TrainData.timestamp <= TrandataSize+i*60/interval)]
 
-#         # print("Training set has {} samples.".format(X_train.shape[0]))
-#         # print("Testing set has {} samples.".format(X_test.shape[0]))
-        
+            # print("Training set has {} samples.".format(X_train.shape[0]))
+            # print("Testing set has {} samples.".format(X_test.shape[0]))
 
-#         # # # # 預設參數之決策樹
-#         # # dtc = DTC()
+            # # # # 預設參數之決策樹
+            # # dtc = DTC()
 
-#         dtc = fit_model_k_fold(X_train, y_train)
-#         dtc.fit(X_train, y_train)
-#         print("max_depth is {} for the optimal model.".format(dtc.get_params()['max_depth']))
-#         # print("k_fold Parameter 'criterion' is {} for the optimal model.".format(dtc.get_params()['criterion']))
-#         # print(dtc)
+            dtc = fit_model_k_fold(X_train, y_train)
+            dtc.fit(X_train, y_train)
+            # print("max_depth is {} for the optimal model.".format(dtc.get_params()['max_depth']))
+            # print("k_fold Parameter 'criterion' is {} for the optimal model.".format(dtc.get_params()['criterion']))
+            # print(dtc)
 
-#         # # 特徵重要度 
-#         # print(dtc.feature_importances_)
-#         # predict_target = dtc.predict(X_test)
-#         # print(predict_target)
-#         # print(sum(predict_target == y_test))
+            # # 特徵重要度 
+            # print(dtc.feature_importances_)
+            # predict_target = dtc.predict(X_test)
+            # print(predict_target)
+            # print(sum(predict_target == y_test))
 
-#         # from sklearn import metrics
-#         # print(metrics.classification_report(y_test, predict_target))
-#         # print(metrics.confusion_matrix(y_test, predict_target))
+            # from sklearn import metrics
+            # print(metrics.classification_report(y_test, predict_target))
+            # print(metrics.confusion_matrix(y_test, predict_target))
 
-#         xaxis.append(timelength/60)
-#         yaxis.append(dtc.score(X_test, y_test))
-#         print(timelength/60, ' min Accuracy：', dtc.score(X_test, y_test))
+            acu_queue.append(dtc.score(X_test, y_test))
+            print(timelength/60, ' min Accuracy：', dtc.score(X_test, y_test))
 
-#         # # =================== 將各個裝置pair分開計算各自的預測結果 ======================
-#         # i=0
-#         # while((max(TrainData.timestamp)-(TrandataSize+12*i))>0):
-#         #     X_testset.append(X.loc[(TrainData.timestamp > TrandataSize+12*i) & (TrainData.timestamp <= TrandataSize+12*(i+1))])
-#         #     y_testset.append(y.loc[(TrainData.timestamp > TrandataSize+12*i) & (TrainData.timestamp <= TrandataSize+12*(i+1))])
-#         #     i=i+1
-#         # import collections, numpy
-#         # accuracy_que=[]
-#         # for i in range(len(X_testset)):
-#         #     accuracy_que.append(dtc.score(X_testset[i], y_testset[i]))
+        xaxis.append(timelength/60)
+        yaxis.append(sum(acu_queue)/(16-int(timelength/60)))
 
-#         #     pair_queue=['dev1','dev2','dev3','dev4','dev5','dev6','dev7','dev8','dev9','dev10','dev11']
-#         #     pair_queue2=['dev12','dev13','dev14','dev15']
-#         #     for dev1, dev2 in combinations(pair_queue,2) :
-#         #         # X_testset[i].loc[(X_testset[i].index =='{dev1}_{dev2}'.format(dev1=dev1,dev2=dev2))]
-#         #         test_pair=X_testset[i].loc[(X_testset[i].index =='{dev1}_{dev2}'.format(dev1=dev1,dev2=dev2))]
-#         #         predict_target = dtc.predict(test_pair)
-#         #         print('{dev1}_{dev2} = '.format(dev1=dev1,dev2=dev2), '0: ', np.count_nonzero(predict_target==0), '1:', np.count_nonzero(predict_target==1))
+        # # =================== 將各個裝置pair分開計算各自的預測結果 ======================
+        # i=0
+        # while((max(TrainData.timestamp)-(TrandataSize+12*i))>0):
+        #     X_testset.append(X.loc[(TrainData.timestamp > TrandataSize+12*i) & (TrainData.timestamp <= TrandataSize+12*(i+1))])
+        #     y_testset.append(y.loc[(TrainData.timestamp > TrandataSize+12*i) & (TrainData.timestamp <= TrandataSize+12*(i+1))])
+        #     i=i+1
+        # import collections, numpy
+        # accuracy_que=[]
+        # for i in range(len(X_testset)):
+        #     accuracy_que.append(dtc.score(X_testset[i], y_testset[i]))
 
-#         # print(accuracy_que)
+        #     pair_queue=['dev1','dev2','dev3','dev4','dev5','dev6','dev7','dev8','dev9','dev10','dev11']
+        #     pair_queue2=['dev12','dev13','dev14','dev15']
+        #     for dev1, dev2 in combinations(pair_queue,2) :
+        #         # X_testset[i].loc[(X_testset[i].index =='{dev1}_{dev2}'.format(dev1=dev1,dev2=dev2))]
+        #         test_pair=X_testset[i].loc[(X_testset[i].index =='{dev1}_{dev2}'.format(dev1=dev1,dev2=dev2))]
+        #         predict_target = dtc.predict(test_pair)
+        #         print('{dev1}_{dev2} = '.format(dev1=dev1,dev2=dev2), '0: ', np.count_nonzero(predict_target==0), '1:', np.count_nonzero(predict_target==1))
 
-#         # # with open('tree.dot', 'w') as f:
-#         # #     f = export_graphviz(dtc, feature_names=X.columns ,out_file=f, filled=True, rounded=True, special_characters=True)
-#         # # # # dot -Tpng tree.dot -o tree.png
-#         # # # # dot -Tsvg tree.dot -o tree.svg
+        # print(accuracy_que)
 
-#     # import plotly.graph_objects as go
-#     # fig = go.Figure()
-#     # fig.add_trace(go.Scatter(x=xaxis, y=yaxis,
-#     #                 mode='lines+markers',
-#     #                 name='With CosSimularity'))
-#     # fig.update_layout(title='TranData Size Comparison', xaxis = dict(title='Traindata Size (minutes)'),  yaxis = dict(title='Accuracy'), font = dict(family='Montserrat SemiBold',size = 14))
-#     # pio.write_image(fig, 'chart/TranData Size Comparison_v2.png', scale=2)
-#     # fig.show()
+        # # with open('tree.dot', 'w') as f:
+        # #     f = export_graphviz(dtc, feature_names=X.columns ,out_file=f, filled=True, rounded=True, special_characters=True)
+        # # # # dot -Tpng tree.dot -o tree.png
+        # # # # dot -Tsvg tree.dot -o tree.svg
 
-# # ========== TranData Size Comparison(Without CosSimilarity) ==========
-#     xaxis_without=[]
-#     yaxis_without=[]
-#     for timelength in range(60,1080,60):
-#         # timelength=600 #資料長度(秒數)
-#         TrandataSize=timelength/interval
-#         TrainData = pd.read_csv('TrainData1211.csv', error_bad_lines=False)
-#         TrainData=TrainData.set_index('pair')
-#         # TrainData1211 = pd.read_csv('TrainData1211.csv', error_bad_lines=False)
-#         # print(TrainData1211)
+    # import plotly.graph_objects as go
+    # fig = go.Figure()
+    # fig.add_trace(go.Scatter(x=xaxis, y=yaxis,
+    #                 mode='lines+markers',
+    #                 name='With CosSimularity'))
+    # fig.update_layout(title='TranData Size Comparison', xaxis = dict(title='Traindata Size (minutes)'),  yaxis = dict(title='Accuracy'), font = dict(family='Montserrat SemiBold',size = 14))
+    # pio.write_image(fig, 'chart/TranData Size Comparison_v3.png', scale=2)
+    # fig.show()
 
-#         # print(TrainData)
+# ========== TranData Size Comparison(Without CosSimilarity) ==========
+    xaxis_without=[]
+    yaxis_without=[]
+    for timelength in range(60,900,60):
+        # timelength=600 #資料長度(秒數)
+        TrandataSize=timelength/interval
+        TrainData = pd.read_csv('TrainData1211.csv', error_bad_lines=False)
+        TrainData=TrainData.set_index('pair')
+        # TrainData1211 = pd.read_csv('TrainData1211.csv', error_bad_lines=False)
+        # print(TrainData1211)
 
-#         X = TrainData.iloc[:, 0:13]
-#         X=X.drop(['CosSim'], axis=1)
-#         y = TrainData.iloc[:, 13]
-#         # print(X)
+        # print(TrainData)
 
-#         X_train=X.loc[(TrainData.timestamp <= TrandataSize)]
-#         y_train=y.loc[(TrainData.timestamp <= TrandataSize)]
-#         X_test=X.loc[(TrainData.timestamp > TrandataSize)]
-#         y_test=y.loc[(TrainData.timestamp > TrandataSize)]
+        X = TrainData.iloc[:, 0:13]
+        X=X.drop(['CosSim'], axis=1)
+        y = TrainData.iloc[:, 13]
+        # print(X)
 
-#         # X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.2, random_state = 0)
-#         # print("Training set has {} samples.".format(X_train.shape[0]))
-#         # print("Testing set has {} samples.".format(X_test.shape[0]))
+        X_test=X.loc[(TrainData.timestamp > (900/interval))]
+        y_test=y.loc[(TrainData.timestamp > (900/interval))]
 
-#         # # # 預設參數之決策樹
-#         # dtc = DTC()
+        acu_queue=[]
+        for i in range(0,16-int(timelength/60)):
+            X_train=X.loc[(TrainData.timestamp > i*60/interval) & (TrainData.timestamp <= TrandataSize+i*60/interval)]
+            y_train=y.loc[(TrainData.timestamp > i*60/interval) & (TrainData.timestamp <= TrandataSize+i*60/interval)]
 
-#         dtc = fit_model_k_fold(X_train, y_train)
-#         dtc.fit(X_train, y_train)
-#         print("max_depth is {} for the optimal model.".format(dtc.get_params()['max_depth']))
-#         # print("k_fold Parameter 'criterion' is {} for the optimal model.".format(dtc.get_params()['criterion']))
-#         # print(dtc)
+            # print("Training set has {} samples.".format(X_train.shape[0]))
+            # print("Testing set has {} samples.".format(X_test.shape[0]))
 
-#         # # 特徵重要度
-#         # print(dtc.feature_importances_)
-#         # predict_target = dtc.predict(X_test)
-#         # print(predict_target)
-#         # print(sum(predict_target == y_test))
+            # # # # 預設參數之決策樹
+            # # dtc = DTC()
 
-#         # from sklearn import metrics
-#         # print(metrics.classification_report(y_test, predict_target))
-#         # print(metrics.confusion_matrix(y_test, predict_target))
+            dtc = fit_model_k_fold(X_train, y_train)
+            dtc.fit(X_train, y_train)
+            # print("max_depth is {} for the optimal model.".format(dtc.get_params()['max_depth']))
+            # print("k_fold Parameter 'criterion' is {} for the optimal model.".format(dtc.get_params()['criterion']))
+            # print(dtc)
 
-#         xaxis_without.append(timelength/60)
-#         yaxis_without.append(dtc.score(X_test, y_test))
-#         print(timelength/60, ' min Accuracy：', dtc.score(X_test, y_test))
+            # # 特徵重要度 
+            # print(dtc.feature_importances_)
+            # predict_target = dtc.predict(X_test)
+            # print(predict_target)
+            # print(sum(predict_target == y_test))
 
-# #         # with open('tree.dot', 'w') as f:
-# #         #     f = export_graphviz(dtc, feature_names=X.columns ,out_file=f, filled=True, rounded=True, special_characters=True)
-# #         # # # dot -Tpng tree.dot -o tree.png
-# #         # # # dot -Tsvg tree.dot -o tree.svg
+            # from sklearn import metrics
+            # print(metrics.classification_report(y_test, predict_target))
+            # print(metrics.confusion_matrix(y_test, predict_target))
 
-# #     import plotly.graph_objects as go
-# #     fig = go.Figure()
-# #     fig.add_trace(go.Scatter(x=xaxis_without, y=yaxis_without,
-# #                     mode='lines+markers',
-# #                     name='Without CosSimularity'))
-# #     fig.update_layout(title='TranData Size Comparison', xaxis = dict(title='Traindata Size (minutes)'),  yaxis = dict(title='Accuracy'), font = dict(family='Montserrat SemiBold',size = 14))
-# #     pio.write_image(fig, 'chart/TranData Size Comparison(Without CosSimilarity)_v2.png', scale=2)
-# #     fig.show()
+            acu_queue.append(dtc.score(X_test, y_test))
+            print(timelength/60, ' min Accuracy：', dtc.score(X_test, y_test))
+
+        xaxis_without.append(timelength/60)
+        yaxis_without.append(sum(acu_queue)/(16-int(timelength/60)))
+
+#         # with open('tree.dot', 'w') as f:
+#         #     f = export_graphviz(dtc, feature_names=X.columns ,out_file=f, filled=True, rounded=True, special_characters=True)
+#         # # # dot -Tpng tree.dot -o tree.png
+#         # # # dot -Tsvg tree.dot -o tree.svg
+
+    # import plotly.graph_objects as go
+    # fig = go.Figure()
+    # fig.add_trace(go.Scatter(x=xaxis_without, y=yaxis_without,
+    #                 mode='lines+markers',
+    #                 name='Without CosSimularity'))
+    # fig.update_layout(title='TranData Size Comparison', xaxis = dict(title='Traindata Size (minutes)'),  yaxis = dict(title='Accuracy'), font = dict(family='Montserrat SemiBold',size = 14))
+    # pio.write_image(fig, 'chart/TranData Size Comparison(Without CosSimilarity)_v3.png', scale=2)
+    # fig.show()
 
 # ========== TranData Size Comparison(WiTrack) ==========
     xaxis=[]
@@ -883,28 +885,32 @@ if __name__ == '__main__':
         acu_all.append(acu)
 
 
-    import plotly.graph_objects as go
-    # fig = go.Figure()
-    # # fig.add_trace(go.Scatter(x=xaxis, y=acu_all,
-    # #                 mode='lines+markers',
-    # #                 name='WiTrack'))
-    # fig.add_trace(go.Scatter(x=xaxis, y=yaxis,
-    #                 mode='lines+markers',
-    #                 name='With CosSimularity'))
-    # fig.add_trace(go.Scatter(x=xaxis_without, y=yaxis_without,
-    #                 mode='lines+markers',
-    #                 name='Without CosSimularity'))
-    # fig.update_layout(title='Trandata Size Comparison', xaxis = dict(title='Traindata Size (minutes)'),  yaxis = dict(title='Accuracy'), font = dict(family='Montserrat SemiBold',size = 14))
-    # pio.write_image(fig, 'chart/TranData Size Comparison(All)_v2.png', scale=2)
-    # fig.show()
 
-    fig2 = go.Figure()
-    fig2.add_trace(go.Scatter(x=xaxis, y=acu_all,
+    import plotly.graph_objects as go
+
+    # fig2 = go.Figure()
+    # fig2.add_trace(go.Scatter(x=xaxis, y=acu_all,
+    #                 mode='lines+markers',
+    #                 name='WiTrack'))
+    # fig2.update_layout(title='TranData Size Comparison', xaxis = dict(title='Traindata Size (minutes)'),  yaxis = dict(title='Accuracy'), font = dict(family='Montserrat SemiBold',size = 14))
+    # pio.write_image(fig2, 'chart/TranData Size Comparison(WiTrack)_v3.png', scale=2)
+    # fig2.show()
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=xaxis, y=acu_all,
                     mode='lines+markers',
                     name='WiTrack'))
-    fig2.update_layout(title='TranData Size Comparison', xaxis = dict(title='Traindata Size (minutes)'),  yaxis = dict(title='Accuracy'), font = dict(family='Montserrat SemiBold',size = 14))
-    pio.write_image(fig2, 'chart/TranData Size Comparison(WiTrack)_v3.png', scale=2)
-    fig2.show()
+    fig.add_trace(go.Scatter(x=xaxis, y=yaxis,
+                    mode='lines+markers',
+                    name='With CosSimularity'))
+    fig.add_trace(go.Scatter(x=xaxis_without, y=yaxis_without,
+                    mode='lines+markers',
+                    name='Without CosSimularity'))
+    fig.update_layout(title='Trandata Size Comparison', xaxis = dict(title='Traindata Size (minutes)'),  yaxis = dict(title='Accuracy'), font = dict(family='Courier New, monospace',size = 18,color="#7f7f7f"))
+    pio.write_image(fig, 'chart/TranData Size Comparison(All)_v3.png', scale=2)
+    fig.show()
+
+
 
 
 
